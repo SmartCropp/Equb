@@ -4,6 +4,7 @@ const cookieParser=require('cookie-parser')
 const equbRoutes = require('./routes/equbRouter');
 const userRoutes = require('./routes/userRouter');
 const authRoutes=require('./routes/authroutes')
+const paymentRoutes=require('./routes/paymentroutes')
 
 
  dotenv.config();
@@ -22,6 +23,7 @@ const authRoutes=require('./routes/authroutes')
  app.use('/api/equbs', equbRoutes);
  app.use('/api/users', userRoutes);
  app.use('/api/users', authRoutes);
+ app.use( paymentRoutes);
 
 
  module.exports = app;
