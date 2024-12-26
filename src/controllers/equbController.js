@@ -4,54 +4,6 @@ const User = require('../models/user');
 
 
 //tested
-exports.createEqubGroupByAdmin = async (req, res) => {
-  try {
-    const { name, totalAmount, contributionPerUser, startDate, rounds, frequency } = req.body;
-    // const adminId = req.user._id;
-
-    // if (!req.user.isAdmin) {
-    //   return res.status(403).json({ message: 'Only admins can create Equb groups' });
-    // }
-
-    if (!name || !totalAmount || !contributionPerUser || !startDate || !rounds || !frequency) {
-      return res.status(400).json({ message: 'All fields are required' });
-    }
-
-    // Calculate end date based on frequency and rounds
-    const frequencyMapping = {
-      daily: 1,
-      weekly: 7,
-      monthly: 30,
-    };
-
-    const intervalDays = frequencyMapping[frequency];
-    if (!intervalDays) {
-      return res.status(400).json({ message: 'Invalid frequency provided' });
-    }
-
-    const calculatedEndDate = new Date(startDate);
-    calculatedEndDate.setDate(calculatedEndDate.getDate() + rounds * intervalDays);
-
-    const equbGroup = new EqubGroup({
-      name,
-      // createdBy: adminId,
-      totalAmount,
-      contributionPerUser,
-      startDate,
-      rounds,
-      frequency,
-      endDate: calculatedEndDate,
-      status: 'active',
-      participants: [],
-    });
-
-    await equbGroup.save();
-
-    res.status(201).json({ message: 'Equb group created successfully', equbGroup });
-  } catch (error) {
-    res.status(500).json({ message: 'Error creating Equb group', error });
-  }
-};
 
 //tested
 exports.joinEqubGroup = async (req, res) => {
@@ -131,79 +83,6 @@ exports.getAllEqubGroups = async (req, res) => {
   } catch (error) {
     console.error('Error fetching Equb groups:', error);
     res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-
- 
-exports.processEqubPayments = async () => {
-  try {
-    const today = new Date();
-
-     const dueEqubGroups = await EqubGroup.find({
-      status: 'active',
-      nextPayoutDate: { $lte: today },
-    });
-
-    let processedCount = 0;
-
-    for (const equbGroup of dueEqubGroups) {
-       const eligibleParticipants = equbGroup.participants.filter(
-        (participant) => !participant.hasReceivedPayout
-      );
-
-       if (eligibleParticipants.length === 0) {
-        equbGroup.currentRound += 1;
-
-        if (equbGroup.currentRound >= equbGroup.rounds) {
-          equbGroup.status = 'completed';
-          equbGroup.nextPayoutDate = null;
-          console.log(`Equb group "${equbGroup.name}" has completed all rounds.`);
-        } else {
-          equbGroup.participants.forEach((participant) => {
-            participant.hasReceivedPayout = false;
-          });
-          equbGroup.nextPayoutDate = calculateNextPayoutDate(
-            equbGroup.startDate,
-            equbGroup.frequency,
-            equbGroup.currentRound,
-            equbGroup.rounds
-          );
-          console.log(`Equb group "${equbGroup.name}" reset for round ${equbGroup.currentRound}.`);
-        }
-
-        await equbGroup.save();
-        continue;
-      }
-
-      const randomIndex = Math.floor(Math.random() * eligibleParticipants.length);
-      const selectedParticipant = eligibleParticipants[randomIndex];
-
-       equbGroup.participants = equbGroup.participants.map((participant) => {
-        if (participant.userId.toString() === selectedParticipant.userId.toString()) {
-          participant.hasReceivedPayout = true;
-        }
-        return participant;
-      });
-
-       equbGroup.nextPayoutDate = calculateNextPayoutDate(
-        equbGroup.startDate,
-        equbGroup.frequency,
-        equbGroup.currentRound,
-        equbGroup.rounds
-      );
-
-      await equbGroup.save();
-
-      processedCount++;
-      console.log(
-        `Payment given to user ${selectedParticipant.userId} in group "${equbGroup.name}".`
-      );
-    }
-
-    console.log(`Processed ${processedCount} Equb payments.`);
-  } catch (error) {
-    console.error('Error processing Equb payments:', error);
   }
 };
 

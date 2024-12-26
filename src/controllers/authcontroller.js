@@ -6,6 +6,7 @@ const { createToken } = require('../utils/createToken')
 const { isPassMatched, hashPassword } = require('../utils/passwordHelper')
 
   exports.SignUp_Post = async (req, res) => {
+    console.log('signup requested')
     const { name, email, password ,
             phone,gender,confirmpassword,
             city, subCity, woreda, houseNo
@@ -70,9 +71,10 @@ const { isPassMatched, hashPassword } = require('../utils/passwordHelper')
   
   
 exports.LogIn_Post=async (req, res) => {
-  const { email, password } = req.body;
 
-  const newUser = await User.findOne({ email });
+  const { phone, password } = req.body;
+
+  const newUser = await User.findOne({ phone });
 
   if (!newUser) {
       return res.status(404).json({ message: "Account not found" });
@@ -85,8 +87,15 @@ exports.LogIn_Post=async (req, res) => {
       return res.status(401).json({ message: "Invalid login credentials" });
   } else {
       const token=createToken(newUser._id)
-      res.cookie('jwt',token,{httpOnly:true,maxAge: 3600000})
-      res.json(newUser)
+      return res.json({
+        message: "Login successful",
+        token: token,  
+        user: {
+          email: newUser.email,
+          name: newUser.name,
+          phone: newUser.phone,
+        }
+      });
   }
 };
 
